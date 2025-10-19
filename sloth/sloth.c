@@ -1,23 +1,56 @@
 #include "sloth.h"
 #include "tree.h"
 
-Database *newDatabase(char databaseName[64]){
-    Database *database;
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
 
-    database = malloc(sizeof(Database));
+struct Column* endInsertInit(struct Column *column, char key[255]){
+    struct Column *endColumn = (struct Column*)malloc(sizeof(struct Column));
 
-    strcpy_s(database->name, 64, databaseName);
-    //database->trees = malloc(sizeof(Tree));
+    endColumn->value = NULL;
+    strcpy_s(endColumn->key, 255, key);
+    endColumn->next_column = NULL;
 
-    return database;
+    if(column == NULL){
+        return endColumn;
+    }                                            
+
+    struct Column *temp = column;
+    while(temp->next_column != NULL){
+        temp = temp->next_column;
+    }
+    column->next_column = endColumn;
+
+    return column;
 }
 
-void createTable(Database *database, char tableName[64], int nodeCount, struct Node *node, char* keys[]){
-    Schema schema = {
-        .node = node,
-        .nodeCount = nodeCount
-    };
-    strcpy_s(schema.tableName, 64, tableName);
-    memcpy(schema.keys, keys, nodeCount);
-    addTree(database, tableName, schema);
+struct Table createTable(const char *tableName, unsigned int fieldNumber, ...){
+    struct Table table;
+    strcpy_s(table.tableName, 255, tableName);
+
+    struct Row *rowTableHead = (struct Row*)malloc(sizeof(struct Row));
+    rowTableHead->next_row = NULL;
+
+    struct Column *column = NULL;
+
+    int i = fieldNumber;
+
+    va_list args;
+    va_start(args, fieldNumber);
+
+    do {
+        column = endInsertInit(column, va_arg(args, char*));
+        i--;
+    } while(i != 0);
+
+    va_end(args);
+
+    rowTableHead->column = column;
+    table.head = rowTableHead;
+
+    return table;
 }
+
+
+
